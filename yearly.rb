@@ -1,15 +1,17 @@
+# frozen_string_literal: true
+
 require 'date'
 
-DATE = 0
-MAXTEMPERATURE = 1
-MINTEMPERATURE = 3
-MAXHUMIDITY = 7
+DATE_INDEX = 0
+MAXTEMPERATURE_INDEX = 1
+MINTEMPERATURE_INDEX = 3
+MAXHUMIDITY_INDEX = 7
 
 def maximum_temp_record(arr)
   max_temp = []
   arr[1..-1].each do |i|
-    max_temp.push(-100_000) if i[MAXTEMPERATURE].nil?
-    max_temp.push(i[MAXTEMPERATURE].to_i) unless i[MAXTEMPERATURE].nil?
+    max_temp.push(-100_000) if i[MAXTEMPERATURE_INDEX].nil?
+    max_temp.push(i[MAXTEMPERATURE_INDEX].to_i) unless i[MAXTEMPERATURE_INDEX].nil?
   end
   max_temp
 end
@@ -17,8 +19,8 @@ end
 def minimum_temp_record(arr)
   min_temp = []
   arr[1..-1].each do |i|
-    min_temp.push(100_000) if i[MINTEMPERATURE].nil?
-    min_temp.push(i[MINTEMPERATURE].to_i) unless i[MINTEMPERATURE].nil?
+    min_temp.push(100_000) if i[MINTEMPERATURE_INDEX].nil?
+    min_temp.push(i[MINTEMPERATURE_INDEX].to_i) unless i[MINTEMPERATURE_INDEX].nil?
   end
   min_temp
 end
@@ -26,8 +28,8 @@ end
 def maximum_humidity_record(arr)
   max_humid = []
   arr[1..-1].each do |i|
-    max_humid.push(-100_000) if i[MAXHUMIDITY].nil?
-    max_humid.push(i[MAXHUMIDITY].to_i) unless i[MAXHUMIDITY].nil?
+    max_humid.push(-100_000) if i[MAXHUMIDITY_INDEX].nil?
+    max_humid.push(i[MAXHUMIDITY_INDEX].to_i) unless i[MAXHUMIDITY_INDEX].nil?
   end
   max_humid
 end
@@ -36,6 +38,7 @@ def file_to_arr(file_data)
   arr = []
   file_data.each do |i|
     next if i.empty? || i.start_with?('<')
+
     arr.push(i[0..-15].split(','))
   end
   arr
@@ -68,32 +71,34 @@ def valid_paths
     mon = Date::ABBR_MONTHNAMES[i + 1]
     pth = "./#{ARGV[2]}/#{ARGV[2]}_#{ARGV[1]}_#{mon}.txt"
     next unless File.file?(pth)
+
     path.push(pth)
   end
   path
-  
+end
+
+def monthly_record_getter(arr)
+  # max_temp = maximum_temp_record(arr)
+  # min_temp = minimum_temp_record(arr)
+  # max_humid = maximum_humidity_record(arr)
+  [maximum_temp_record(arr).index(maximum_temp_record(arr).max) + 1, maximum_temp_record(arr).max,
+   minimum_temp_record(arr).index(minimum_temp_record(arr).min) + 1, minimum_temp_record(arr).min,
+   maximum_humidity_record(arr).index(maximum_humidity_record(arr).max) + 1,
+   maximum_humidity_record(arr).max]
 end
 
 # This is the main Module
-module Annual  
+module Annual
   def yearly_runner
     monthly = {}
     valid_paths.each do |i|
-      file_data = File.open(i).readlines.map(&:chomp)
-      arr = file_to_arr(file_data)
-      month = arr[1][0].split('-')[1]
-      max_temp = maximum_temp_record(arr)
-      min_temp = minimum_temp_record(arr)
-      max_humid = maximum_humidity_record(arr)
-      m = [max_temp.index(max_temp.max) + 1, maximum_temp_record(arr).max,
-           min_temp.index(min_temp.min) + 1, min_temp.min,
-           max_humid.index(max_humid.max) + 1,
-           maximum_humidity_record(arr).max]
-      monthly[Date::MONTHNAMES[month.to_i]] = m
-    end  
-  abort('No record Found')if monthly.empty?  
-  higest_record(monthly)
-  lowest_record(monthly)
-  total_humidity(monthly)
+      arr = file_to_arr(File.open(i).readlines.map(&:chomp))
+      monthly[Date::MONTHNAMES[arr[1][0].split('-')[1].to_i]] = monthly_record_getter(arr)
+    end
+    abort('No record Found') if monthly.empty?
+
+    higest_record(monthly)
+    lowest_record(monthly)
+    total_humidity(monthly)
   end
 end
